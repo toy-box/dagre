@@ -1,6 +1,6 @@
 {
   "name": "dagre",
-  "version": "0.8.6-pre",
+  "version": "0.8.7-pre",
   "main": [
     "dist/dagre.core.js"
   ],

@@ -2987,7 +2987,7 @@ function notime(name, fn) {
 }
 
 },{"./graphlib":7,"./lodash":10}],30:[function(require,module,exports){
-module.exports = "0.8.6-pre";
+module.exports = "0.8.7-pre";
 
 },{}]},{},[1])(1)
 });
