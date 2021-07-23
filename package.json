@@ -1,6 +1,6 @@
 {
   "name": "dagre",
-  "version": "0.8.6-pre",
+  "version": "0.8.7-pre",
   "description": "Graph layout for JavaScript",
   "author": "Chris Pettitt <cpettitt@gmail.com>",
   "contributors": [
@@ -15,6 +15,9 @@
   "dependencies": {
     "graphlib": "^2.1.8",
     "lodash": "^4.17.19"
+  },
+  "scripts": {
+    "test": "mocha ./test/rank/network-simple-test.js"
   },
   "devDependencies": {
     "benchmark": "2.1.4",

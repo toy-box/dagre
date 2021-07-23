@@ -311,6 +311,7 @@ function debugOrdering(g) {
 }
 
 },{"./graphlib":7,"./lodash":10,"./util":29}],7:[function(require,module,exports){
+// eslint-disable-next-line no-redeclare
 /* global window */
 
 var graphlib;
@@ -485,6 +486,7 @@ function runLayout(g, time) {
   time("    acyclic",                function() { acyclic.run(g); });
   time("    nestingGraph.run",       function() { nestingGraph.run(g); });
   time("    rank",                   function() { rank(util.asNonCompoundGraph(g)); });
+  console.log('after rank', g._nodes);
   time("    injectEdgeLabelProxies", function() { injectEdgeLabelProxies(g); });
   time("    removeEmptyRanks",       function() { removeEmptyRanks(g); });
   time("    nestingGraph.cleanup",   function() { nestingGraph.cleanup(g); });
@@ -532,9 +534,8 @@ function updateInputGraph(inputGraph, layoutGraph) {
   });
 
   _.forEach(inputGraph.edges(), function(e) {
-    var inputLabel = inputGraph.edge(e);
+    var inputLabel = inputGraph.edge(e.v, e.w);
     var layoutLabel = layoutGraph.edge(e);
-
     inputLabel.points = layoutLabel.points;
     if (_.has(layoutLabel, "x")) {
       inputLabel.x = layoutLabel.x;
@@ -844,6 +845,7 @@ function canonicalize(attrs) {
 }
 
 },{"./acyclic":2,"./add-border-segments":3,"./coordinate-system":4,"./graphlib":7,"./lodash":10,"./nesting-graph":11,"./normalize":12,"./order":17,"./parent-dummy-chains":22,"./position":24,"./rank":26,"./util":29}],10:[function(require,module,exports){
+// eslint-disable-next-line no-redeclare
 /* global window */
 
 var lodash;
@@ -2363,6 +2365,7 @@ function shiftRanks(t, g, delta) {
 
 var rankUtil = require("./util");
 var longestPath = rankUtil.longestPath;
+var shortestPath = rankUtil.shortestPath;
 var feasibleTree = require("./feasible-tree");
 var networkSimplex = require("./network-simplex");
 
@@ -2388,10 +2391,12 @@ module.exports = rank;
  *       fix them up later.
  */
 function rank(g) {
+  console.log('g.graph().ranker', g.graph().ranker);
   switch(g.graph().ranker) {
   case "network-simplex": networkSimplexRanker(g); break;
   case "tight-tree": tightTreeRanker(g); break;
   case "longest-path": longestPathRanker(g); break;
+  case "short-tree": shortTreeRanker(g); break;
   default: networkSimplexRanker(g);
   }
 }
@@ -2408,6 +2413,10 @@ function networkSimplexRanker(g) {
   networkSimplex(g);
 }
 
+function shortTreeRanker(g) {
+  shortestPath(g);
+  // feasibleTree(g);
+}
 },{"./feasible-tree":25,"./network-simplex":27,"./util":28}],27:[function(require,module,exports){
 "use strict";
 
@@ -2651,6 +2660,7 @@ var _ = require("../lodash");
 
 module.exports = {
   longestPath: longestPath,
+  shortestPath: shortestPath,
   slack: slack
 };
 
@@ -2698,6 +2708,33 @@ function longestPath(g) {
     return (label.rank = rank);
   }
 
+  _.forEach(g.sources(), dfs);
+}
+
+function shortestPath(g) {
+  console.log('out', g._out);
+  console.log('in', g._in);
+
+  var visited = {};
+  function dfs(v) {
+    var label = g.node(v);
+    if (_.has(visited, v)) {
+      return;
+    }
+    if (label) {
+      var links = _.map(g.inEdges(v), function (e) {
+        return e.v;
+      }).filter(function (n) { return !g.sources().includes(n); });
+      if (!links || links.length === 0) {
+        label.rank = 0;
+      } else {
+        label.rank = _.max(_.map(links, function(n) { return g.node(n).rank; })) + 1;
+      }
+      _.forEach(g.outEdges(v),  function(e) {
+        dfs(e.w);
+      });
+    }
+  }
   _.forEach(g.sources(), dfs);
 }
 
@@ -2950,7 +2987,7 @@ function notime(name, fn) {
 }
 
 },{"./graphlib":7,"./lodash":10}],30:[function(require,module,exports){
-module.exports = "0.8.5";
+module.exports = "0.8.6-pre";
 
 },{}],31:[function(require,module,exports){
 /**
