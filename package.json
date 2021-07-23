@@ -1,6 +1,6 @@
 {
   "name": "@toy-box/dagre",
-  "version": "0.8.7-pre",
+  "version": "0.8.8-pre",
   "description": "Graph layout for JavaScript",
   "author": "Chris Pettitt <cpettitt@gmail.com>",
   "contributors": [
@@ -43,6 +43,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/dagrejs/dagre.git"
+    "url": "https://github.com/toy-box/dagre.git"
   }
 }
