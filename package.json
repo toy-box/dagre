@@ -18,7 +18,7 @@
     "lodash": "^4.17.19"
   },
   "scripts": {
-    "test": "mocha ./test/rank/network-simple-test.js"
+    "test": "mocha ./test/order/order-test.js"
   },
   "devDependencies": {
     "benchmark": "2.1.4",
