@@ -14,14 +14,23 @@ describe("order", function() {
   });
 
   it("does not add crossings to a tree structure", function() {
-    g.setNode("a", { rank: 1 });
-    _.forEach(["b", "e"], function(v) { g.setNode(v, { rank: 2 }); });
-    _.forEach(["c", "d", "f"], function(v) { g.setNode(v, { rank: 3 }); });
+    g.setNode("a", { rank: 0 });
+    _.forEach(["b", "e"], function(v) { g.setNode(v, { rank: 1 }); });
+    _.forEach(["c", "d", "f"], function(v) { g.setNode(v, { rank: 2 }); });
+    g.setNode("g", { rank: 0 });
     g.setPath(["a", "b", "c"]);
     g.setEdge("b", "d");
     g.setPath(["a", "e", "f"]);
     // console.log('before order', g);
-    order(g);
+    const fork = {
+      a: {
+        'children': ['e', 'b'],
+      },
+      b: {
+        'children': ['d', 'c', 'f'],
+      }
+    };
+    order(g, fork);
     // console.log('after order', g);
 
     var layering = util.buildLayerMatrix(g);
