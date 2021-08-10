@@ -1400,8 +1400,28 @@ function forkOrder(g, fork) {
   _.forEach(unvisited, function(v) {
     var node = g.node(v);
     visited[v] = true;
-    layers[node.rank || 0].push(v);
+    var list = layers[node.rank];
+    layers[node.rank] = [];
+    if (node.rank -1 > -1) {
+      _.forEach(layers[node.rank -1], function(layer) {
+        var children = (fork[layer] || {}).children;
+        if (children && children.length > 0) {
+          _.forEach(children, function(child) {
+            if (_.find(list, function(li) { return li === child; })) {
+              layers[node.rank].push(child);
+            } else {
+              layers[node.rank].push(v);
+            }
+          });
+        } else {
+          layers[node.rank || 0].push(v);
+        }
+      });
+    } else {
+      layers[node.rank || 0].push(v);
+    }
   });
+  console.log(layers);
 
   return layers;
 }
@@ -1441,8 +1461,8 @@ function order(g, fork) {
     downLayerGraphs = buildLayerGraphs(g, _.range(1, maxRank + 1), "inEdges"),
     upLayerGraphs = buildLayerGraphs(g, _.range(maxRank - 1, -1, -1), "outEdges");
   if (fork) {
-    forkOrder(g, fork);
-    assignOrder(g, layering);
+    var layeringFork = forkOrder(g, fork);
+    assignOrder(g, layeringFork);
   } else {
     var layering = initOrder(g);
     assignOrder(g, layering);
@@ -3054,7 +3074,7 @@ function notime(name, fn) {
 }
 
 },{"./graphlib":7,"./lodash":10}],31:[function(require,module,exports){
-module.exports = "0.8.9";
+module.exports = "0.8.10";
 
 },{}],32:[function(require,module,exports){
 /**
