@@ -33,7 +33,7 @@ module.exports = {
   version: require("./lib/version")
 };
 
-},{"./lib/debug":6,"./lib/graphlib":7,"./lib/layout":9,"./lib/util":29,"./lib/version":30}],2:[function(require,module,exports){
+},{"./lib/debug":6,"./lib/graphlib":7,"./lib/layout":9,"./lib/util":30,"./lib/version":31}],2:[function(require,module,exports){
 "use strict";
 
 var _ = require("./lodash");
@@ -142,7 +142,7 @@ function addBorderNode(g, prop, prefix, sg, sgNode, rank) {
   }
 }
 
-},{"./lodash":10,"./util":29}],4:[function(require,module,exports){
+},{"./lodash":10,"./util":30}],4:[function(require,module,exports){
 "use strict";
 
 var _ = require("./lodash");
@@ -310,7 +310,7 @@ function debugOrdering(g) {
   return h;
 }
 
-},{"./graphlib":7,"./lodash":10,"./util":29}],7:[function(require,module,exports){
+},{"./graphlib":7,"./lodash":10,"./util":30}],7:[function(require,module,exports){
 // eslint-disable-next-line no-redeclare
 /* global window */
 
@@ -472,15 +472,16 @@ module.exports = layout;
 
 function layout(g, opts) {
   var time = opts && opts.debugTiming ? util.time : util.notime;
+  var fork = opts && opts.fork;
   time("layout", function() {
     var layoutGraph = 
       time("  buildLayoutGraph", function() { return buildLayoutGraph(g); });
-    time("  runLayout",        function() { runLayout(layoutGraph, time); });
+    time("  runLayout",        function() { runLayout(layoutGraph, time, fork); });
     time("  updateInputGraph", function() { updateInputGraph(g, layoutGraph); });
   });
 }
 
-function runLayout(g, time) {
+function runLayout(g, time, fork) {
   time("    makeSpaceForEdgeLabels", function() { makeSpaceForEdgeLabels(g); });
   time("    removeSelfEdges",        function() { removeSelfEdges(g); });
   time("    acyclic",                function() { acyclic.run(g); });
@@ -496,7 +497,7 @@ function runLayout(g, time) {
   time("    normalize.run",          function() { normalize.run(g); });
   time("    parentDummyChains",      function() { parentDummyChains(g); });
   time("    addBorderSegments",      function() { addBorderSegments(g); });
-  time("    order",                  function() { order(g); });
+  time("    order",                  function() { order(g, fork); });
   time("    insertSelfEdges",        function() { insertSelfEdges(g); });
   time("    adjustCoordinateSystem", function() { coordinateSystem.adjust(g); });
   time("    position",               function() { position(g); });
@@ -844,7 +845,7 @@ function canonicalize(attrs) {
   return newAttrs;
 }
 
-},{"./acyclic":2,"./add-border-segments":3,"./coordinate-system":4,"./graphlib":7,"./lodash":10,"./nesting-graph":11,"./normalize":12,"./order":17,"./parent-dummy-chains":22,"./position":24,"./rank":26,"./util":29}],10:[function(require,module,exports){
+},{"./acyclic":2,"./add-border-segments":3,"./coordinate-system":4,"./graphlib":7,"./lodash":10,"./nesting-graph":11,"./normalize":12,"./order":18,"./parent-dummy-chains":23,"./position":25,"./rank":27,"./util":30}],10:[function(require,module,exports){
 // eslint-disable-next-line no-redeclare
 /* global window */
 
@@ -1025,7 +1026,7 @@ function cleanup(g) {
   });
 }
 
-},{"./lodash":10,"./util":29}],12:[function(require,module,exports){
+},{"./lodash":10,"./util":30}],12:[function(require,module,exports){
 "use strict";
 
 var _ = require("./lodash");
@@ -1117,7 +1118,7 @@ function undo(g) {
   });
 }
 
-},{"./lodash":10,"./util":29}],13:[function(require,module,exports){
+},{"./lodash":10,"./util":30}],13:[function(require,module,exports){
 var _ = require("../lodash");
 
 module.exports = addSubgraphConstraints;
@@ -1350,6 +1351,65 @@ function twoLayerCrossCount(g, northLayer, southLayer) {
 "use strict";
 
 var _ = require("../lodash");
+
+module.exports = forkOrder;
+
+/*
+ * Assigns an initial order value for each node by performing a DFS search
+ * starting from nodes in the first rank. Nodes are assigned an order in their
+ * rank as they are first visited.
+ *
+ * This approach comes from Gansner, et al., "A Technique for Drawing Directed
+ * Graphs."
+ *
+ * Returns a layering matrix with an array per layer and each layer sorted by
+ * the order of its nodes.
+ */
+function forkOrder(g, fork) {
+  var visited = {};
+  var simpleNodes = _.filter(g.nodes(), function (v) {
+    return !g.children(v).length;
+  });
+  var maxRank = _.max(_.map(simpleNodes, function (v) { return g.node(v).rank; }));
+  var layers = _.map(_.range(maxRank + 1), function () { return []; });
+  var orderedVs = _.sortBy(simpleNodes, function(v) { return g.node(v).rank; });
+  for (var i = 0; i <= maxRank; ++ i) {
+    if (i === 0) {
+      _.forEach(orderedVs, function(v) {
+        var node = g.node(v);
+        if (node.rank === 0) {
+          visited[v] = true;
+          layers[node.rank].push(v);
+        }
+      });
+    } else {
+      _.forEach(layers[i-1], function(parent) {
+        _.forEach((fork[parent] || {}).children, function(v) {
+          if (!visited[v] && _.find(orderedVs, function(node) { return node === v; })) {
+            var node = g.node(v);
+            visited[v] = true;
+            layers[node.rank].push(v);
+          }
+        });
+      });
+    }
+  }
+  var unvisited = _.filter(orderedVs, function(v) {
+    return !visited[v];
+  });
+  _.forEach(unvisited, function(v) {
+    var node = g.node(v);
+    visited[v] = true;
+    layers[node.rank || 0].push(v);
+  });
+
+  return layers;
+}
+
+},{"../lodash":10}],18:[function(require,module,exports){
+"use strict";
+
+var _ = require("../lodash");
 var initOrder = require("./init-order");
 var crossCount = require("./cross-count");
 var sortSubgraph = require("./sort-subgraph");
@@ -1357,6 +1417,7 @@ var buildLayerGraph = require("./build-layer-graph");
 var addSubgraphConstraints = require("./add-subgraph-constraints");
 var Graph = require("../graphlib").Graph;
 var util = require("../util");
+var forkOrder = require("./fork-order");
 
 module.exports = order;
 
@@ -1375,30 +1436,34 @@ module.exports = order;
  *    1. Graph nodes will have an "order" attribute based on the results of the
  *       algorithm.
  */
-function order(g) {
+function order(g, fork) {
   var maxRank = util.maxRank(g),
     downLayerGraphs = buildLayerGraphs(g, _.range(1, maxRank + 1), "inEdges"),
     upLayerGraphs = buildLayerGraphs(g, _.range(maxRank - 1, -1, -1), "outEdges");
-
-  var layering = initOrder(g);
-  assignOrder(g, layering);
-
-  var bestCC = Number.POSITIVE_INFINITY,
-    best;
-
-  for (var i = 0, lastBest = 0; lastBest < 4; ++i, ++lastBest) {
-    sweepLayerGraphs(i % 2 ? downLayerGraphs : upLayerGraphs, i % 4 >= 2);
-
-    layering = util.buildLayerMatrix(g);
-    var cc = crossCount(g, layering);
-    if (cc < bestCC) {
-      lastBest = 0;
-      best = _.cloneDeep(layering);
-      bestCC = cc;
+  if (fork) {
+    forkOrder(g, fork);
+    assignOrder(g, layering);
+  } else {
+    var layering = initOrder(g);
+    assignOrder(g, layering);
+  
+    var bestCC = Number.POSITIVE_INFINITY,
+      best;
+  
+    for (var i = 0, lastBest = 0; lastBest < 4; ++i, ++lastBest) {
+      sweepLayerGraphs(i % 2 ? downLayerGraphs : upLayerGraphs, i % 4 >= 2);
+  
+      layering = util.buildLayerMatrix(g);
+      var cc = crossCount(g, layering);
+      if (cc < bestCC) {
+        lastBest = 0;
+        best = _.cloneDeep(layering);
+        bestCC = cc;
+      }
     }
+  
+    assignOrder(g, best);
   }
-
-  assignOrder(g, best);
 }
 
 function buildLayerGraphs(g, ranks, relationship) {
@@ -1427,7 +1492,7 @@ function assignOrder(g, layering) {
   });
 }
 
-},{"../graphlib":7,"../lodash":10,"../util":29,"./add-subgraph-constraints":13,"./build-layer-graph":15,"./cross-count":16,"./init-order":18,"./sort-subgraph":20}],18:[function(require,module,exports){
+},{"../graphlib":7,"../lodash":10,"../util":30,"./add-subgraph-constraints":13,"./build-layer-graph":15,"./cross-count":16,"./fork-order":17,"./init-order":19,"./sort-subgraph":21}],19:[function(require,module,exports){
 "use strict";
 
 var _ = require("../lodash");
@@ -1467,7 +1532,7 @@ function initOrder(g) {
   return layers;
 }
 
-},{"../lodash":10}],19:[function(require,module,exports){
+},{"../lodash":10}],20:[function(require,module,exports){
 "use strict";
 
 var _ = require("../lodash");
@@ -1591,7 +1656,7 @@ function mergeEntries(target, source) {
   source.merged = true;
 }
 
-},{"../lodash":10}],20:[function(require,module,exports){
+},{"../lodash":10}],21:[function(require,module,exports){
 var _ = require("../lodash");
 var barycenter = require("./barycenter");
 var resolveConflicts = require("./resolve-conflicts");
@@ -1601,10 +1666,13 @@ module.exports = sortSubgraph;
 
 function sortSubgraph(g, v, cg, biasRight) {
   var movable = g.children(v);
+  console.log('movable', v, movable);
   var node = g.node(v);
   var bl = node ? node.borderLeft : undefined;
   var br = node ? node.borderRight: undefined;
   var subgraphs = {};
+  console.log('bl', bl);
+  console.log('br', br);
 
   if (bl) {
     movable = _.filter(movable, function(w) {
@@ -1669,7 +1737,7 @@ function mergeBarycenters(target, other) {
   }
 }
 
-},{"../lodash":10,"./barycenter":14,"./resolve-conflicts":19,"./sort":21}],21:[function(require,module,exports){
+},{"../lodash":10,"./barycenter":14,"./resolve-conflicts":20,"./sort":22}],22:[function(require,module,exports){
 var _ = require("../lodash");
 var util = require("../util");
 
@@ -1728,7 +1796,7 @@ function compareWithBias(bias) {
   };
 }
 
-},{"../lodash":10,"../util":29}],22:[function(require,module,exports){
+},{"../lodash":10,"../util":30}],23:[function(require,module,exports){
 var _ = require("./lodash");
 
 module.exports = parentDummyChains;
@@ -1816,7 +1884,7 @@ function postorder(g) {
   return result;
 }
 
-},{"./lodash":10}],23:[function(require,module,exports){
+},{"./lodash":10}],24:[function(require,module,exports){
 "use strict";
 
 var _ = require("../lodash");
@@ -2237,7 +2305,7 @@ function width(g, v) {
   return g.node(v).width;
 }
 
-},{"../graphlib":7,"../lodash":10,"../util":29}],24:[function(require,module,exports){
+},{"../graphlib":7,"../lodash":10,"../util":30}],25:[function(require,module,exports){
 "use strict";
 
 var _ = require("../lodash");
@@ -2269,7 +2337,7 @@ function positionY(g) {
 }
 
 
-},{"../lodash":10,"../util":29,"./bk":23}],25:[function(require,module,exports){
+},{"../lodash":10,"../util":30,"./bk":24}],26:[function(require,module,exports){
 "use strict";
 
 var _ = require("../lodash");
@@ -2360,7 +2428,7 @@ function shiftRanks(t, g, delta) {
   });
 }
 
-},{"../graphlib":7,"../lodash":10,"./util":28}],26:[function(require,module,exports){
+},{"../graphlib":7,"../lodash":10,"./util":29}],27:[function(require,module,exports){
 "use strict";
 
 var rankUtil = require("./util");
@@ -2391,7 +2459,6 @@ module.exports = rank;
  *       fix them up later.
  */
 function rank(g) {
-  console.log('g.graph().ranker', g.graph().ranker);
   switch(g.graph().ranker) {
   case "network-simplex": networkSimplexRanker(g); break;
   case "tight-tree": tightTreeRanker(g); break;
@@ -2417,7 +2484,7 @@ function shortTreeRanker(g) {
   shortestPath(g);
   // feasibleTree(g);
 }
-},{"./feasible-tree":25,"./network-simplex":27,"./util":28}],27:[function(require,module,exports){
+},{"./feasible-tree":26,"./network-simplex":28,"./util":29}],28:[function(require,module,exports){
 "use strict";
 
 var _ = require("../lodash");
@@ -2653,7 +2720,7 @@ function isDescendant(tree, vLabel, rootLabel) {
   return rootLabel.low <= vLabel.lim && vLabel.lim <= rootLabel.lim;
 }
 
-},{"../graphlib":7,"../lodash":10,"../util":29,"./feasible-tree":25,"./util":28}],28:[function(require,module,exports){
+},{"../graphlib":7,"../lodash":10,"../util":30,"./feasible-tree":26,"./util":29}],29:[function(require,module,exports){
 "use strict";
 
 var _ = require("../lodash");
@@ -2746,7 +2813,7 @@ function slack(g, e) {
   return g.node(e.w).rank - g.node(e.v).rank - g.edge(e).minlen;
 }
 
-},{"../lodash":10}],29:[function(require,module,exports){
+},{"../lodash":10}],30:[function(require,module,exports){
 /* eslint "no-console": off */
 
 "use strict";
@@ -2986,8 +3053,8 @@ function notime(name, fn) {
   return fn();
 }
 
-},{"./graphlib":7,"./lodash":10}],30:[function(require,module,exports){
-module.exports = "0.8.8-pre";
+},{"./graphlib":7,"./lodash":10}],31:[function(require,module,exports){
+module.exports = "0.8.9";
 
 },{}]},{},[1])(1)
 });

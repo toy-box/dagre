@@ -1,6 +1,6 @@
 {
   "name": "@toy-box/dagre",
-  "version": "0.8.9-pre",
+  "version": "0.8.9",
   "description": "Graph layout for JavaScript",
   "author": "Chris Pettitt <cpettitt@gmail.com>",
   "contributors": [
