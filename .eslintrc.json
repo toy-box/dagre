@@ -7,7 +7,7 @@
   "extends": "eslint:recommended",
   "rules": {
     "indent": [ "error", 2 ],
-    "linebreak-style": [ "error", "unix" ],
+    "linebreak-style": [ 0, "unix" ],
     "semi": [ "error", "always" ]
   }
 }
