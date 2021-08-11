@@ -17,7 +17,7 @@ describe("order", function() {
     g.setNode("a", { rank: 0 });
     _.forEach(["b", "e"], function(v) { g.setNode(v, { rank: 1 }); });
     _.forEach(["c", "d", "f"], function(v) { g.setNode(v, { rank: 2 }); });
-    _.forEach(["ct", "wd"], function(v) { g.setNode(v, { rank: 3 }); });
+    _.forEach(["wd", "ct"], function(v) { g.setNode(v, { rank: 3 }); });
     g.setNode("g", { rank: 2 });
     g.setPath(["a", "b", "c"]);
     g.setEdge("b", "d");
