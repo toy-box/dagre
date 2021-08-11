@@ -3113,7 +3113,7 @@ function notime(name, fn) {
 }
 
 },{"./graphlib":7,"./lodash":10}],31:[function(require,module,exports){
-module.exports = "0.8.11";
+module.exports = "0.8.12";
 
 },{}]},{},[1])(1)
 });
