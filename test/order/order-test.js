@@ -44,7 +44,7 @@ describe("order", function() {
     };
     order(g, fork);
     var layering = util.buildLayerMatrix(g);
-    expect(crossCount(g, layering)).to.equal(2);
+    expect(crossCount(g, layering)).to.equal(0);
   });
 
   // it("can solve a simple graph", function() {
