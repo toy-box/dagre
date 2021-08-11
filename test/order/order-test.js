@@ -35,6 +35,9 @@ describe("order", function() {
       d: {
         "children": ["ct"],
       },
+      c: {
+        "children": ["ct"],
+      },
       f: {
         "children": ["ct"],
       },
