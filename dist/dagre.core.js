@@ -1407,13 +1407,15 @@ function forkOrder(g, fork) {
         var children = (fork[layer] || {}).children;
         if (children && children.length > 0) {
           _.forEach(children, function(child) {
-            if (_.find(list, function(li) { return li === child; })) {
-              layers[node.rank].push(child);
-            } else {
-              layers[node.rank].push(v);
+            if (!_.find(layers[node.rank], function(r) { return r === child; })) {
+              if (_.find(list, function(li) { return li === child; })) {
+                layers[node.rank].push(child);
+              } else {
+                layers[node.rank].push(v);
+              }
             }
           });
-        } else {
+        } else if (!_.find(layers[node.rank], function(r) { return r === v; })) {
           layers[node.rank || 0].push(v);
         }
       });
@@ -3074,7 +3076,7 @@ function notime(name, fn) {
 }
 
 },{"./graphlib":7,"./lodash":10}],31:[function(require,module,exports){
-module.exports = "0.8.10";
+module.exports = "0.8.11";
 
 },{}]},{},[1])(1)
 });
