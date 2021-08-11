@@ -33,7 +33,7 @@ module.exports = {
   version: require("./lib/version")
 };
 
-},{"./lib/debug":6,"./lib/graphlib":7,"./lib/layout":9,"./lib/util":30,"./lib/version":31}],2:[function(require,module,exports){
+},{"./lib/debug":6,"./lib/graphlib":7,"./lib/layout":9,"./lib/util":29,"./lib/version":30}],2:[function(require,module,exports){
 "use strict";
 
 var _ = require("./lodash");
@@ -142,7 +142,7 @@ function addBorderNode(g, prop, prefix, sg, sgNode, rank) {
   }
 }
 
-},{"./lodash":10,"./util":30}],4:[function(require,module,exports){
+},{"./lodash":10,"./util":29}],4:[function(require,module,exports){
 "use strict";
 
 var _ = require("./lodash");
@@ -310,7 +310,7 @@ function debugOrdering(g) {
   return h;
 }
 
-},{"./graphlib":7,"./lodash":10,"./util":30}],7:[function(require,module,exports){
+},{"./graphlib":7,"./lodash":10,"./util":29}],7:[function(require,module,exports){
 // eslint-disable-next-line no-redeclare
 /* global window */
 
@@ -845,7 +845,7 @@ function canonicalize(attrs) {
   return newAttrs;
 }
 
-},{"./acyclic":2,"./add-border-segments":3,"./coordinate-system":4,"./graphlib":7,"./lodash":10,"./nesting-graph":11,"./normalize":12,"./order":18,"./parent-dummy-chains":23,"./position":25,"./rank":27,"./util":30}],10:[function(require,module,exports){
+},{"./acyclic":2,"./add-border-segments":3,"./coordinate-system":4,"./graphlib":7,"./lodash":10,"./nesting-graph":11,"./normalize":12,"./order":17,"./parent-dummy-chains":22,"./position":24,"./rank":26,"./util":29}],10:[function(require,module,exports){
 // eslint-disable-next-line no-redeclare
 /* global window */
 
@@ -1026,7 +1026,7 @@ function cleanup(g) {
   });
 }
 
-},{"./lodash":10,"./util":30}],12:[function(require,module,exports){
+},{"./lodash":10,"./util":29}],12:[function(require,module,exports){
 "use strict";
 
 var _ = require("./lodash");
@@ -1118,7 +1118,7 @@ function undo(g) {
   });
 }
 
-},{"./lodash":10,"./util":30}],13:[function(require,module,exports){
+},{"./lodash":10,"./util":29}],13:[function(require,module,exports){
 var _ = require("../lodash");
 
 module.exports = addSubgraphConstraints;
@@ -1351,95 +1351,6 @@ function twoLayerCrossCount(g, northLayer, southLayer) {
 "use strict";
 
 var _ = require("../lodash");
-
-module.exports = forkOrder;
-
-/*
- * Assigns an initial order value for each node by performing a DFS search
- * starting from nodes in the first rank. Nodes are assigned an order in their
- * rank as they are first visited.
- *
- * This approach comes from Gansner, et al., "A Technique for Drawing Directed
- * Graphs."
- *
- * Returns a layering matrix with an array per layer and each layer sorted by
- * the order of its nodes.
- */
-function forkOrder(g, fork) {
-  var visited = {};
-  var simpleNodes = _.filter(g.nodes(), function (v) {
-    return !g.children(v).length;
-  });
-  var maxRank = _.max(_.map(simpleNodes, function (v) { return g.node(v).rank; }));
-  var layers = _.map(_.range(maxRank + 1), function () { return []; });
-  var orderedVs = _.sortBy(simpleNodes, function(v) { return g.node(v).rank; });
-  for (var i = 0; i <= maxRank; ++ i) {
-    if (i === 0) {
-      _.forEach(orderedVs, function(v) {
-        var node = g.node(v);
-        if (node.rank === 0) {
-          visited[v] = true;
-          layers[node.rank].push(v);
-        }
-      });
-    } else {
-      _.forEach(layers[i-1], function(parent) {
-        _.forEach((fork[parent] || {}).children, function(v) {
-          if (!visited[v] && _.find(orderedVs, function(node) { return node === v; })) {
-            var node = g.node(v);
-            visited[v] = true;
-            layers[node.rank].push(v);
-          }
-        });
-      });
-    }
-  }
-  var unvisited = _.filter(orderedVs, function(v) {
-    return !visited[v];
-  });
-  function dfs(v) {
-    if (_.has(visited, v)) return;
-    visited[v] = true;
-    var node = g.node(v);
-    layers[node.rank].push(v);
-    _.forEach(g.successors(v), dfs);
-  }
-  _.forEach(unvisited, dfs);
-  // _.forEach(unvisited, function(v) {
-  //   var node = g.node(v);
-  //   visited[v] = true;
-  //   // var list = layers[node.rank];
-  //   layers[node.rank] = [];
-  //   if (node.rank -1 > -1) {
-  //     _.forEach(layers[node.rank -1], function(layer) {
-  //       var children = (fork[layer] || {}).children;
-  //       if (children && children.length > 0) {
-  //         _.forEach(children, function(child) {
-  //           if (!_.find(layers[node.rank], function(r) { return r === child; })) {
-  //             if (_.find(list, function(li) { return li === child; })) {
-  //               layers[node.rank].push(child);
-  //             } else {
-  //               layers[node.rank].push(v);
-  //             }
-  //           }
-  //         });
-  //       } else if (!_.find(layers[node.rank], function(r) { return r === v; })) {
-  //         layers[node.rank || 0].push(v);
-  //       }
-  //     });
-  //   } else {
-  //     layers[node.rank || 0].push(v);
-  //   }
-  // });
-  console.log(layers);
-
-  return layers;
-}
-
-},{"../lodash":10}],18:[function(require,module,exports){
-"use strict";
-
-var _ = require("../lodash");
 var initOrder = require("./init-order");
 var crossCount = require("./cross-count");
 var sortSubgraph = require("./sort-subgraph");
@@ -1447,7 +1358,7 @@ var buildLayerGraph = require("./build-layer-graph");
 var addSubgraphConstraints = require("./add-subgraph-constraints");
 var Graph = require("../graphlib").Graph;
 var util = require("../util");
-var forkOrder = require("./fork-order");
+// var forkOrder = require("./fork-order");
 
 module.exports = order;
 
@@ -1470,11 +1381,12 @@ function order(g, fork) {
   var maxRank = util.maxRank(g),
     downLayerGraphs = buildLayerGraphs(g, _.range(1, maxRank + 1), "inEdges"),
     upLayerGraphs = buildLayerGraphs(g, _.range(maxRank - 1, -1, -1), "outEdges");
+  var layering = initOrder(g);
   if (fork) {
-    var layeringFork = forkOrder(g, fork);
-    assignOrder(g, layeringFork);
+    // var layeringFork = forkOrder(g, fork);
+    assignOrder(g, layering);
   } else {
-    var layering = initOrder(g);
+    // var layering = initOrder(g);
     assignOrder(g, layering);
   
     var bestCC = Number.POSITIVE_INFINITY,
@@ -1522,7 +1434,7 @@ function assignOrder(g, layering) {
   });
 }
 
-},{"../graphlib":7,"../lodash":10,"../util":30,"./add-subgraph-constraints":13,"./build-layer-graph":15,"./cross-count":16,"./fork-order":17,"./init-order":19,"./sort-subgraph":21}],19:[function(require,module,exports){
+},{"../graphlib":7,"../lodash":10,"../util":29,"./add-subgraph-constraints":13,"./build-layer-graph":15,"./cross-count":16,"./init-order":18,"./sort-subgraph":20}],18:[function(require,module,exports){
 "use strict";
 
 var _ = require("../lodash");
@@ -1562,7 +1474,7 @@ function initOrder(g) {
   return layers;
 }
 
-},{"../lodash":10}],20:[function(require,module,exports){
+},{"../lodash":10}],19:[function(require,module,exports){
 "use strict";
 
 var _ = require("../lodash");
@@ -1686,7 +1598,7 @@ function mergeEntries(target, source) {
   source.merged = true;
 }
 
-},{"../lodash":10}],21:[function(require,module,exports){
+},{"../lodash":10}],20:[function(require,module,exports){
 var _ = require("../lodash");
 var barycenter = require("./barycenter");
 var resolveConflicts = require("./resolve-conflicts");
@@ -1767,7 +1679,7 @@ function mergeBarycenters(target, other) {
   }
 }
 
-},{"../lodash":10,"./barycenter":14,"./resolve-conflicts":20,"./sort":22}],22:[function(require,module,exports){
+},{"../lodash":10,"./barycenter":14,"./resolve-conflicts":19,"./sort":21}],21:[function(require,module,exports){
 var _ = require("../lodash");
 var util = require("../util");
 
@@ -1826,7 +1738,7 @@ function compareWithBias(bias) {
   };
 }
 
-},{"../lodash":10,"../util":30}],23:[function(require,module,exports){
+},{"../lodash":10,"../util":29}],22:[function(require,module,exports){
 var _ = require("./lodash");
 
 module.exports = parentDummyChains;
@@ -1914,7 +1826,7 @@ function postorder(g) {
   return result;
 }
 
-},{"./lodash":10}],24:[function(require,module,exports){
+},{"./lodash":10}],23:[function(require,module,exports){
 "use strict";
 
 var _ = require("../lodash");
@@ -2335,7 +2247,7 @@ function width(g, v) {
   return g.node(v).width;
 }
 
-},{"../graphlib":7,"../lodash":10,"../util":30}],25:[function(require,module,exports){
+},{"../graphlib":7,"../lodash":10,"../util":29}],24:[function(require,module,exports){
 "use strict";
 
 var _ = require("../lodash");
@@ -2367,7 +2279,7 @@ function positionY(g) {
 }
 
 
-},{"../lodash":10,"../util":30,"./bk":24}],26:[function(require,module,exports){
+},{"../lodash":10,"../util":29,"./bk":23}],25:[function(require,module,exports){
 "use strict";
 
 var _ = require("../lodash");
@@ -2458,7 +2370,7 @@ function shiftRanks(t, g, delta) {
   });
 }
 
-},{"../graphlib":7,"../lodash":10,"./util":29}],27:[function(require,module,exports){
+},{"../graphlib":7,"../lodash":10,"./util":28}],26:[function(require,module,exports){
 "use strict";
 
 var rankUtil = require("./util");
@@ -2514,7 +2426,7 @@ function shortTreeRanker(g) {
   shortestPath(g);
   // feasibleTree(g);
 }
-},{"./feasible-tree":26,"./network-simplex":28,"./util":29}],28:[function(require,module,exports){
+},{"./feasible-tree":25,"./network-simplex":27,"./util":28}],27:[function(require,module,exports){
 "use strict";
 
 var _ = require("../lodash");
@@ -2750,7 +2662,7 @@ function isDescendant(tree, vLabel, rootLabel) {
   return rootLabel.low <= vLabel.lim && vLabel.lim <= rootLabel.lim;
 }
 
-},{"../graphlib":7,"../lodash":10,"../util":30,"./feasible-tree":26,"./util":29}],29:[function(require,module,exports){
+},{"../graphlib":7,"../lodash":10,"../util":29,"./feasible-tree":25,"./util":28}],28:[function(require,module,exports){
 "use strict";
 
 var _ = require("../lodash");
@@ -2843,7 +2755,7 @@ function slack(g, e) {
   return g.node(e.w).rank - g.node(e.v).rank - g.edge(e).minlen;
 }
 
-},{"../lodash":10}],30:[function(require,module,exports){
+},{"../lodash":10}],29:[function(require,module,exports){
 /* eslint "no-console": off */
 
 "use strict";
@@ -3083,8 +2995,8 @@ function notime(name, fn) {
   return fn();
 }
 
-},{"./graphlib":7,"./lodash":10}],31:[function(require,module,exports){
-module.exports = "0.8.13";
+},{"./graphlib":7,"./lodash":10}],30:[function(require,module,exports){
+module.exports = "0.8.14";
 
 },{}]},{},[1])(1)
 });
