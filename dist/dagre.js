@@ -1397,43 +1397,14 @@ function forkOrder(g, fork) {
   var unvisited = _.filter(orderedVs, function(v) {
     return !visited[v];
   });
-  var ranks = [];
-  _.forEach(unvisited, function(v) {
+  function dfs(v) {
+    if (_.has(visited, v)) return;
+    visited[v] = true;
     var node = g.node(v);
-    if (ranks.length === 0 || _.find(ranks, function(rank) { return rank !== node.rank; })) ranks.push(node.rank);
-  });
-  _.forEach(ranks, function(rank) {
-    if (rank -1 > -1) {
-      var rankChilds = [];
-      _.forEach(layers[rank-1], function(layer) {
-        var children = (fork[layer] || {}).children;
-        _.forEach(children, function(child) {
-          if (!_.find(rankChilds, function(ch) { return ch === child; })) rankChilds.push(child);
-        });
-      });
-      var rankArr = _.filter(orderedVs, function(v) { 
-        var node = g.node(v);
-        return node.rank === rank;
-      });
-      console.log(rankChilds, rankArr, '111');
-      var currentRanks = _.cloneDeep(rankArr);
-      _.forEach(rankChilds, function(v, index) {
-        var idx = null;
-        var obj = _.find(rankArr, function(ar, arrIdx) {
-          if (ar === v) {
-            idx = arrIdx;
-            return true;
-          }
-        });
-        if (idx > -1) {
-          var item = currentRanks[index];
-          currentRanks.splice(idx, 1, item);
-          currentRanks.splice(index, 1, obj);
-        }
-      });
-      layers[rank] = currentRanks;
-    }
-  });
+    layers[node.rank].push(v);
+    _.forEach(g.successors(v), dfs);
+  }
+  _.forEach(unvisited, dfs);
   // _.forEach(unvisited, function(v) {
   //   var node = g.node(v);
   //   visited[v] = true;
@@ -1460,7 +1431,7 @@ function forkOrder(g, fork) {
   //     layers[node.rank || 0].push(v);
   //   }
   // });
-  console.log(layers, ranks);
+  console.log(layers);
 
   return layers;
 }
