@@ -1,6 +1,6 @@
 {
   "name": "@toy-box/dagre",
-  "version": "0.8.12",
+  "version": "0.8.13",
   "description": "Graph layout for JavaScript",
   "author": "Chris Pettitt <cpettitt@gmail.com>",
   "contributors": [
@@ -18,7 +18,8 @@
     "lodash": "^4.17.19"
   },
   "scripts": {
-    "test": "mocha ./test/order/order-test.js"
+    "test": "mocha ./test/order/order-test.js",
+    "release": "npm publish --access public"
   },
   "devDependencies": {
     "benchmark": "2.1.4",
